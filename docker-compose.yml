@@ -1,0 +1,35 @@
+version: '3.7' 
+services:
+  db:
+    build:
+      dockerfile: Dockerfile 
+      context: ./mysql
+    tty: true
+    container_name: mysql
+    hostname: projgw.cse.cuhk.edu.hk
+    environment:
+      MYSQL_USER: Group42
+      MYSQL_PASSWORD: physicsisawesome
+      MYSQL_DATABASE: db42
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MYSQL_TCP_PORT: 2633
+    restart: always
+    volumes:
+      - "./schema.sql:/home/Project/schema.sql"
+      - "./update.java:/home/Project/update.java"
+      - "./delete.java:/home/Project/delete.java"
+      - "./insert.java:/home/Project/insert.java"
+      - "./sample_data:/home/Project/sample_data"
+      - "./main.java:/home/Project/main.java"
+
+  admin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    links:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 2633
+    restart: always
+    ports:
+      - 7999:80
