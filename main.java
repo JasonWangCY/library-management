@@ -1,4 +1,4 @@
-import java.util.Scanner;
+import java.util.*;
 import java.sql.*;
 import java.io.*;
 
@@ -514,33 +514,148 @@ class Librarian {
 
     private static boolean do_operation(String userOption) {
         if (userOption.equals("1")) {
-            ;
+            librarian_choice_1();
             return true;
         } else if (userOption.equals("2")) {
-            ;
+            librarian_choice_2();
             return true;
         } else if (userOption.equals("3")) {
-            ;
+            librarian_choice_3();
             return true;
         } else {
             return false;
         }
     }
+
+    private static String enter_user_id(){
+        String userID;
+        boolean userIDErrorFlag;
+        do {
+            Scanner inputScanner = new Scanner(System.in);
+            try{
+                System.out.print("Enter the user ID: ");
+                userID = inputScanner.next();
+                userIDErrorFlag = check_userID_available(userID);
+                if (!userIDErrorFlag) {
+                    System.out.println("User ID \""+userID+"\" is not available.");
+                }
+            }finally{
+                inputScanner.close();
+            }
+        } while (userIDErrorFlag);
+        return userID;
+    }
+
+    private static String enter_call_number(){
+        String callNumber;
+        boolean callNumberErrorFlag;
+        do {
+            Scanner inputScanner = new Scanner(System.in);
+            try{
+                System.out.print("Enter the call number: ");
+                callNumber = inputScanner.next();
+                callNumberErrorFlag = check_call_number_available(callNumber);
+                if (!callNumberErrorFlag) {
+                    System.out.println("Call number \""+callNumber+"\" is not available.");
+                }
+            }finally{
+                inputScanner.close();
+            }
+        } while (callNumberErrorFlag);
+        return callNumber;
+    }
+
+    private static int enter_copy_number(){
+        int copyNumber;
+        boolean copyNumberErrorFlag;
+        do {
+            Scanner inputScanner = new Scanner(System.in);
+            try{
+                System.out.print("Enter the copy number: ");
+                copyNumber = inputScanner.nextInt();
+                copyNumberErrorFlag = check_copy_number_available(copyNumber);
+                if (!copyNumberErrorFlag) {
+                    System.out.println("Copy number \""+copyNumber+"\" is not available.");
+                }
+            }finally{
+                inputScanner.close();
+            }
+        } while (copyNumberErrorFlag);
+        return copyNumber;
+    }
+
+    private static float enter_rating(){
+        float rating;
+        boolean ratingErrorFlag;
+        do {
+            Scanner inputScanner = new Scanner(System.in);
+            try{
+                System.out.print("Enter the rating (0-10): ");
+                rating = inputScanner.nextInt();
+                ratingErrorFlag = check_rating_available(rating);
+                if (!ratingErrorFlag) {
+                    System.out.println("Expected input a value between 0 and 10! Found "+rating+".");
+                }
+            }finally{
+                inputScanner.close();
+            }
+        } while (ratingErrorFlag);
+        return rating;
+    }
+
+    private static void borrow_book(String userID, String callNumber, int copyNumber){
+        ;
+    }
+
+    private static void librarian_choice_1() {
+        boolean transactionErrorFlag = false;
+        String userID = enter_user_id();
+        String callNumber = enter_call_number();
+        int copyNumber = enter_copy_number();
+        try{
+            borrow_book(userID, callNumber, copyNumber);
+        } catch (Exception e) {
+            transactionErrorFlag = true;
+            System.out.println(e);
+        }
+        if (transactionErrorFlag) {
+            System.out.println("Book borrowing failed.");
+        } else {
+            System.out.println("Book borrowing performed successfully.");
+        }
+    }
+
+    private static void librarian_choice_2() {
+        boolean transactionErrorFlag = false;
+        String userID;
+        String callNumber;
+        int copyNumber;
+        float bookRating;
+
+
+
+    }
+
     public static void main() {
         boolean continueFlag = true;
         try {
             do{
                 Scanner inputScanner = new Scanner(System.in);
-                initialization(Utility.choiceQuestionString, Utility.enterChoice);
-                String userOption = inputScanner.next();
-                if (Utility.choice_error_condition(userOption, Librarian.choiceNo)) {
-                    do {
-                        Utility.print_choice_selection_error_message(Librarian.choiceNo);
-                        System.out.print(Utility.enterChoice);
-                        userOption = inputScanner.next();
-                    } while (Utility.choice_error_condition(userOption, Librarian.choiceNo));
+                try{
+                    initialization(Utility.choiceQuestionString, Utility.enterChoice);
+                    String userOption = inputScanner.next();
+                    if (Utility.choice_error_condition(userOption, Librarian.choiceNo)) {
+                        do {
+                            Utility.print_choice_selection_error_message(Librarian.choiceNo);
+                            System.out.print(Utility.enterChoice);
+                            userOption = inputScanner.next();
+                        } while (Utility.choice_error_condition(userOption, Librarian.choiceNo));
+                    }
+                    continueFlag = do_operation(userOption);
                 }
-                continueFlag = do_operation(userOption);
+                finally{
+                    inputScanner.close();
+                }
             }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
