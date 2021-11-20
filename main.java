@@ -627,13 +627,26 @@ class Librarian {
 
     private static void librarian_choice_2() {
         boolean transactionErrorFlag = false;
-        String userID;
-        String callNumber;
-        int copyNumber;
-        float bookRating;
+        String userID = enter_user_id();
+        String callNumber = enter_call_number();
+        int copyNumber = enter_copy_number();
+        float bookRating = enter_rating();
+        try{
+            return_book(userID, callNumber, copyNumber, bookRating);
+        }catch (Exception e){
+            transactionErrorFlag = true;
+            System.out.println(e);
+        }
+        if (transactionErrorFlag) {
+            System.out.println("Book returning failed.");
+        } else {
+            System.out.println("Book returning performed successfully.");
+        }
+    }
 
-
-
+    private static void library_choice_3(){
+        boolean transactionErrorFlag = false;
+        
     }
 
     public static void main() {
