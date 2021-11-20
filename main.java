@@ -115,6 +115,21 @@ class SQLQuery{
             System.out.println(e);
         }
     }
+
+    public static void sql_count(Connection con, String table_name){
+        try{
+            Statement stmt = con.createStatement();
+            String sqlQuery = "select count(*) from " + table_name + ";";
+
+            ResultSet rs = stmt.executeQuery(sqlQuery);
+            
+            rs.next();
+            System.out.println(table_name + ": " + rs.getInt(1));
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
     public static void read_data(Connection con, String folderPath){
         try{
             File file = new File(folderPath + "/user_category.txt");
@@ -388,7 +403,14 @@ class Administrator {
     }
 
     private static void administrator_choice_4(Connection con) {
-        ;
+        System.out.print("Numer of records in each table:\n");
+        SQLQuery.sql_count(con, "user_category");
+        SQLQuery.sql_count(con, "libuser");
+        SQLQuery.sql_count(con, "book_category");
+        SQLQuery.sql_count(con, "book");
+        SQLQuery.sql_count(con, "authorship");
+        SQLQuery.sql_count(con, "copy");
+        SQLQuery.sql_count(con, "borrow");
     }
 
     public static void main(Connection con) {
