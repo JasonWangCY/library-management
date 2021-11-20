@@ -1,10 +1,6 @@
 import java.util.Scanner;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.sql.ResultSet;
+import java.sql.*;
+import java.io.*;
 
 class Utility{
     public static String choiceQuestionString = "What kinds of operations would you like to perform?";
@@ -99,14 +95,6 @@ class SQLConnection{
         try{
             Class.forName("com.mysql.jdbc.Driver");
             con = DriverManager.getConnection(dbAddress, dbUsername, dbPassword);
-            // Statement myStatement = con.createStatement();
-
-
-            //insertion query
-            // String sqlQuery1 = "create table test (test_id integer);";
-            // myStatement.executeUpdate(sqlQuery1);
-
-            // System.out.println("Creation Completed");
         }catch (ClassNotFoundException e){
             System.out.println("[Error]: Java MySQL DB Driver not found!");
             System.exit(0);
@@ -117,12 +105,146 @@ class SQLConnection{
     }
 }
 
-class CreateTable{
-    public static void create_table(Connection con, String query){
+class SQLQuery{
+    public static void sql_operation(Connection con, String query){
         try{
             Statement myStatement = con.createStatement();
 
             myStatement.executeUpdate(query);
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+    public static void read_data(Connection con, String folderPath){
+        try{
+            File file = new File(folderPath + "/user_category.txt");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            PreparedStatement stmt = con.prepareStatement("insert into user_category values (?,?,?)");
+
+            String st = null;
+            while ((st = br.readLine()) != null){
+                String[] split = st.split("\t");
+                int ucid = Integer.parseInt(split[0].trim());
+                String max = split[1].trim();
+                int period = Integer.parseInt(split[2].trim());
+                stmt.setInt(1, ucid);
+                stmt.setString(2, max);
+                stmt.setInt(3, period);
+                stmt.executeUpdate();
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+
+        try{
+            File file = new File(folderPath + "/user.txt");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            PreparedStatement stmt = con.prepareStatement("insert into libuser values (?,?,?,?,?)");
+
+            String st = null;
+            while ((st = br.readLine()) != null){
+                String[] split = st.split("\t");
+                String libuid = split[0].trim();
+                String name = split[1].trim();
+                int age = Integer.parseInt(split[2].trim());
+                String address = split[3].trim();
+                int ucid = Integer.parseInt(split[4].trim());
+                stmt.setString(1, libuid);
+                stmt.setString(2, name);
+                stmt.setInt(3, age);
+                stmt.setString(4, address);
+                stmt.setInt(5, ucid);
+                stmt.executeUpdate();
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+
+        try{
+            File file = new File(folderPath + "/book_category.txt");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            PreparedStatement stmt = con.prepareStatement("insert into book_category values (?,?)");
+
+            String st = null;
+            while ((st = br.readLine()) != null){
+                String[] split = st.split("\t");
+                int bcid = Integer.parseInt(split[0].trim());
+                String bcname = split[1].trim();
+                stmt.setInt(1, bcid);
+                stmt.setString(2, bcname);
+                stmt.executeUpdate();
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+
+        try{
+            File file = new File(folderPath + "/book.txt");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            PreparedStatement stmt1 = con.prepareStatement("insert into book values (?,?,?,?,?,?)");
+            PreparedStatement stmt2 = con.prepareStatement("insert into authorship values (?,?)");
+
+            String st = null;
+            while ((st = br.readLine()) != null){
+                String[] split = st.split("\t");
+                String callnum = split[0].trim();
+                int num_of_copies = Integer.parseInt(split[1].trim()); //where is this in the schema??
+                String title = split[2].trim();
+                String aname = split[3].trim();
+                String publish = split[4].trim();
+                if (!split[5].trim().equals("null")){
+                    double rating = Double.parseDouble(split[5].trim());
+                    stmt1.setDouble(4, rating);
+                } else {
+                    stmt1.setNull(4, Types.DOUBLE);
+                }
+                int tborrowed = Integer.parseInt(split[6].trim());
+                int bcid = Integer.parseInt(split[7].trim());
+
+                stmt1.setString(1, callnum);
+                stmt1.setString(2, title);
+                stmt1.setString(3, publish);
+                stmt1.setInt(5, tborrowed);
+                stmt1.setInt(6, bcid);
+                stmt1.executeUpdate();
+
+                stmt2.setString(1, aname);
+                stmt2.setString(2, callnum);
+                stmt2.executeUpdate();
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+
+        try{
+            File file = new File(folderPath + "/check_out.txt");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            PreparedStatement stmt1 = con.prepareStatement("insert into copy values (?,?)");
+            PreparedStatement stmt2 = con.prepareStatement("insert into borrow values (?,?,?,?,?)");
+
+            String st = null;
+            while ((st = br.readLine()) != null){
+                String[] split = st.split("\t");
+                String callnum = split[0].trim();
+                int copynum = Integer.parseInt(split[1].trim());
+                stmt1.setInt(1, copynum);
+                stmt1.setString(2, callnum);
+                stmt1.executeUpdate();
+
+                String libuid = split[2].trim();
+                String checkout = split[3].trim();
+                if (!split[4].trim().equals("null")){
+                    String return_date = split[4].trim();
+                    stmt2.setString(5, return_date);
+                } else {
+                    stmt2.setNull(5, Types.CHAR);
+                }
+                stmt2.setString(1, libuid);
+                stmt2.setString(2, callnum);
+                stmt2.setInt(3, copynum);
+                stmt2.setString(4, checkout);
+                stmt2.executeUpdate();
+            }
         }catch (Exception e){
             System.out.println(e);
         }
@@ -228,40 +350,44 @@ class Administrator {
             administrator_choice_1(con);
             return true;
         } else if (userOption.equals("2")) {
-            administrator_choice_2();
+            administrator_choice_2(con);
             return true;
         } else if (userOption.equals("3")) {
-            administrator_choice_3();
+            administrator_choice_3(con);
             return true;
         } else if (userOption.equals("4")) {
-            administrator_choice_4();
+            administrator_choice_4(con);
             return true;
         }else {
             return false;
         }
     }
     private static void administrator_choice_1(Connection con){
-        CreateTable.create_table(con, Schema.create_user_category);
-        CreateTable.create_table(con, Schema.create_lib_user);
-        CreateTable.create_table(con, Schema.create_book_category);
-        CreateTable.create_table(con, Schema.create_book);
-        CreateTable.create_table(con, Schema.create_authorship);
-        CreateTable.create_table(con, Schema.create_copy);
-        CreateTable.create_table(con, Schema.create_borrow);
+        SQLQuery.sql_operation(con, Schema.create_user_category);
+        SQLQuery.sql_operation(con, Schema.create_lib_user);
+        SQLQuery.sql_operation(con, Schema.create_book_category);
+        SQLQuery.sql_operation(con, Schema.create_book);
+        SQLQuery.sql_operation(con, Schema.create_authorship);
+        SQLQuery.sql_operation(con, Schema.create_copy);
+        SQLQuery.sql_operation(con, Schema.create_borrow);
         System.out.println("Processing...Done. Database is initialized.");
     }
     
-    private static void administrator_choice_2() {
-        ;
+    private static void administrator_choice_2(Connection con) {
+        String drop_all_tables = "drop tables borrow, copy, authorship, book, book_category, libuser, user_category;";
+        SQLQuery.sql_operation(con, drop_all_tables);
         System.out.println("Processing...Done. Database is removed.");
     }
 
-    private static void administrator_choice_3() {
-        ;
+    private static void administrator_choice_3(Connection con) {
+        System.out.print("\nType in the Source Data Folder Path: ");
+        Scanner inputScanner = new Scanner(System.in);
+        String folderPath = inputScanner.next();
+        SQLQuery.read_data(con, folderPath);
         System.out.println("Processing...Done. Database is inputted to the database.");
     }
 
-    private static void administrator_choice_4() {
+    private static void administrator_choice_4(Connection con) {
         ;
     }
 
