@@ -129,7 +129,24 @@ class SQLQuery{
             System.out.println(e);
         }
     }
+    public static void search_book(Connection con, String sqlQuery){
+        try{
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sqlQuery);
 
+            if(!rs.isBeforeFirst())
+                System.out.println("No records found.");
+            else while(rs.next()){
+                System.out.print("|"+rs.getString("callnum"));
+                System.out.print("|"+rs.getString("title"));
+                System.out.print("|"+rs.getString("bcname"));
+                System.out.print("|"+rs.getString("aname"));
+                System.out.print("|"+rs.getString("rating")+"|\n");
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
     public static void read_data(Connection con, String folderPath){
         try{
             File file = new File(folderPath + "/user_category.txt");
@@ -295,7 +312,7 @@ class Main{
             return true;
         }
         else if (userOption.equals("2")){
-            LibraryUser.main();
+            LibraryUser.main(con);
             return true;
         }
         else if(userOption.equals("3")){
@@ -456,9 +473,9 @@ class LibraryUser{
         System.out.print(dbmsEnterChoice);
     }
     
-    private static boolean do_operation(String userOption) {
+    private static boolean do_operation(String userOption, Connection con) {
         if (userOption.equals("1")) {
-            ;
+            libraryuser_choice_1(con);
             return true;
         } else if (userOption.equals("2")) {
             ;
@@ -467,7 +484,55 @@ class LibraryUser{
             return false;
         }
     }
-    public static void main(){
+
+    private static void libraryuser_choice_1(Connection con){
+        System.out.println("Choose the search criterion:");
+        System.out.println("1. call number");
+        System.out.println("2. title");
+        System.out.println("3. author");
+        System.out.print("Choose the search criterion: ");
+
+        Scanner inputScanner = new Scanner(System.in);
+        String searchOption = inputScanner.next();
+        if (Utility.choice_error_condition(searchOption, 3)) {
+            do {
+                Utility.print_choice_selection_error_message(3);
+                System.out.print("Choose the search criterion: ");
+                searchOption = inputScanner.next();
+            }while (Utility.choice_error_condition(searchOption, 3));
+        }
+        search_operation(searchOption, con);
+    }
+
+    private static void search_operation(String searchOption, Connection con){
+        System.out.print("Type in the Search Keyword: ");
+        Scanner inputScanner = new Scanner(System.in);
+
+        if (searchOption.equals("1")) {
+            String callnum = inputScanner.next();
+            String sqlQuery = "select book.callnum, title, bcname, aname, rating "
+                + "from book, book_category, authorship where book.callnum = '" + callnum + "' "
+                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
+            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
+            SQLQuery.search_book(con, sqlQuery);
+        } else if (searchOption.equals("2")) {
+            String title = inputScanner.next();
+            String sqlQuery = "select book.callnum, title, bcname, aname, rating "
+                + "from book, book_category, authorship where book.title like '%" + title + "%' "
+                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
+            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
+            SQLQuery.search_book(con, sqlQuery);
+        } else if (searchOption.equals("3")) {
+            String author = inputScanner.next();
+            String sqlQuery = "select book.callnum, title, bcname, aname, rating "
+                + "from book, book_category, authorship where aname like '%" + author + "%' "
+                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
+            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
+            SQLQuery.search_book(con, sqlQuery);
+        }
+    }
+
+    public static void main(Connection con){
         boolean continueFlag = true;
         try {
             do{
@@ -481,7 +546,7 @@ class LibraryUser{
                         userOption = inputScanner.next();
                     } while (Utility.choice_error_condition(userOption, LibraryUser.choiceNo));
                 }
-                continueFlag = do_operation(userOption);
+                continueFlag = do_operation(userOption, con);
             }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
