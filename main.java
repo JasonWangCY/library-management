@@ -4,6 +4,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.ResultSet;
 
 class Utility{
     public static String choiceQuestionString = "What kinds of operations would you like to perform?";
@@ -36,6 +37,62 @@ class Utility{
     }
 }
 
+class Schema{
+    public static String create_user_category = "create table if not exists user_category("
+        + "ucid SMALLINT UNSIGNED NOT NULL,"
+        + "max SMALLINT UNSIGNED NOT NULL,"
+        + "period SMALLINT UNSIGNED NOT NULL,"
+        + "PRIMARY KEY(ucid)"
+        + ");";
+    public static String create_lib_user = "create table if not exists libuser("
+        + "libuid CHAR(10) NOT NULL,"  
+        + "name VARCHAR(25) NOT NULL,"
+        + "age SMALLINT UNSIGNED NOT NULL,"
+        + "address VARCHAR(100) NOT NULL,"
+        + "ucid SMALLINT UNSIGNED NOT NULL,"
+        + "PRIMARY KEY (libuid),"
+        + "FOREIGN KEY (ucid) REFERENCES user_category(ucid) ON UPDATE CASCADE ON DELETE CASCADE"
+        + ");";
+    public static String create_book_category = "create table if not exists book_category("
+        + "bcid SMALLINT UNSIGNED NOT NULL,"
+        + "bcname VARCHAR(30) NOT NULL,"
+        + "PRIMARY KEY (bcid)"
+        + ");";
+    public static String create_book = "create table if not exists book("
+        + "callnum CHAR(8) NOT NULL,"
+        + "title VARCHAR(30) NOT NULL,"
+        + "publish CHAR(10) NOT NULL,"
+        + "rating REAL UNSIGNED DEFAULT NULL,"
+        + "tborrowed SMALLINT UNSIGNED NOT NULL,"
+        + "bcid SMALLINT UNSIGNED NOT NULL,"
+        + "PRIMARY KEY (callnum),"
+        + "FOREIGN KEY(bcid) REFERENCES book_category(bcid) ON UPDATE CASCADE ON DELETE CASCADE"
+        + ");";
+    public static String create_authorship = "create table if not exists authorship("
+        + "aname VARCHAR(255) NOT NULL,"
+        + "callnum CHAR(8) NOT NULL,"
+        + "PRIMARY KEY (aname, callnum),"
+        + "FOREIGN KEY (callnum) REFERENCES book(callnum)"
+        + ");";
+    public static String create_copy = "create table if not exists copy("
+        + "copynum SMALLINT UNSIGNED NOT NULL,"
+        + "callnum CHAR(8) NOT NULL,"
+        + "PRIMARY KEY (copynum, callnum),"
+        + "FOREIGN KEY (callnum) REFERENCES book(callnum) ON UPDATE CASCADE ON DELETE CASCADE" 
+        + ");";
+    public static String create_borrow = "create table if not exists borrow("
+        + "libuid CHAR(10) NOT NULL,"
+        + "callnum CHAR(8) NOT NULL,"
+        + "copynum SMALLINT UNSIGNED NOT NULL,"
+        + "checkout CHAR(10) NOT NULL,"
+        + "`return` CHAR(10) DEFAULT NULL,"
+        + "PRIMARY KEY (callnum, copynum, libuid, checkout),"
+        + "FOREIGN KEY(libuid) REFERENCES libuser(libuid) ON UPDATE CASCADE ON DELETE CASCADE," 
+        + "FOREIGN KEY(callnum) REFERENCES book(callnum),"
+        + "FOREIGN KEY(copynum, callnum) REFERENCES copy(copynum, callnum) ON UPDATE CASCADE ON DELETE CASCADE"
+        + ");";
+}
+
 class SQLConnection{
     public static Connection connect_to_sql(String dbAddress, String dbUsername, String dbPassword){
         Connection con = null;
@@ -57,6 +114,18 @@ class SQLConnection{
             System.out.println(e);
         }
         return con;
+    }
+}
+
+class CreateTable{
+    public static void create_table(Connection con, String query){
+        try{
+            Statement myStatement = con.createStatement();
+
+            myStatement.executeUpdate(query);
+        }catch (Exception e){
+            System.out.println(e);
+        }
     }
 }
 
@@ -83,9 +152,9 @@ class Main{
         print_choice_strings();
         System.out.print(dbmsEnterChoice);
     }
-    private static boolean do_operation(String userOption){
+    private static boolean do_operation(String userOption, Connection con){
         if(userOption.equals("1")){
-            Administrator.main();
+            Administrator.main(con);
             return true;
         }
         else if (userOption.equals("2")){
@@ -123,7 +192,7 @@ class Main{
                         userOption = inputScanner.next();
                     } while (Utility.choice_error_condition(userOption, Main.choiceNo));
                 }
-                continueFlag = do_operation(userOption);
+                continueFlag = do_operation(userOption, con);
             }while (continueFlag);
         }catch (Exception e){
             System.out.println(e);
@@ -154,9 +223,9 @@ class Administrator {
         System.out.print(dbmsEnterChoice);
     }
 
-    private static boolean do_operation(String userOption) {
+    private static boolean do_operation(String userOption, Connection con) {
         if (userOption.equals("1")) {
-            administrator_choice_1();
+            administrator_choice_1(con);
             return true;
         } else if (userOption.equals("2")) {
             administrator_choice_2();
@@ -171,8 +240,14 @@ class Administrator {
             return false;
         }
     }
-    private static void administrator_choice_1(){
-        ;
+    private static void administrator_choice_1(Connection con){
+        CreateTable.create_table(con, Schema.create_user_category);
+        CreateTable.create_table(con, Schema.create_lib_user);
+        CreateTable.create_table(con, Schema.create_book_category);
+        CreateTable.create_table(con, Schema.create_book);
+        CreateTable.create_table(con, Schema.create_authorship);
+        CreateTable.create_table(con, Schema.create_copy);
+        CreateTable.create_table(con, Schema.create_borrow);
         System.out.println("Processing...Done. Database is initialized.");
     }
     
@@ -190,7 +265,7 @@ class Administrator {
         ;
     }
 
-    public static void main() {
+    public static void main(Connection con) {
         try {
             boolean continueFlag = true;
             do{
@@ -204,7 +279,7 @@ class Administrator {
                         userOption = inputScanner.next();
                     } while (Utility.choice_error_condition(userOption, Administrator.choiceNo));
                 }
-                continueFlag = do_operation(userOption);
+                continueFlag = do_operation(userOption, con);
             }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
