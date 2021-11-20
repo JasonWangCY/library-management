@@ -147,6 +147,25 @@ class SQLQuery{
             System.out.println(e);
         }
     }
+    public static void search_user_record(Connection con, String sqlQuery){
+        try{
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sqlQuery);
+
+            if(!rs.isBeforeFirst())
+                System.out.println("No records found.");
+            else while(rs.next()){
+                System.out.print("|"+rs.getString("callnum"));
+                System.out.print("|"+rs.getString("title"));
+                System.out.print("|"+rs.getString("copynum"));
+                System.out.print("|"+rs.getString("aname"));
+                System.out.print("|"+rs.getString("checkout"));
+                System.out.print("|"+rs.getString("returned")+"|\n");
+            }
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
     public static void read_data(Connection con, String folderPath){
         try{
             File file = new File(folderPath + "/user_category.txt");
@@ -478,7 +497,7 @@ class LibraryUser{
             libraryuser_choice_1(con);
             return true;
         } else if (userOption.equals("2")) {
-            ;
+            libraryuser_choice_2(con);
             return true;
         } else {
             return false;
@@ -504,6 +523,20 @@ class LibraryUser{
         search_operation(searchOption, con);
     }
 
+    private static void libraryuser_choice_2(Connection con) {
+        System.out.print("Enter the User ID: ");
+        Scanner inputScanner = new Scanner(System.in);
+        String userID = inputScanner.next();
+        
+        String sqlQuery = "select book.callnum, title, copynum, aname, checkout, 'Yes' as returned "
+            + "from book, borrow, authorship, libuser "
+            + "where libuser.libuid = '" + userID + "' and book.callnum=authorship.callnum "
+            + "and book.callnum=borrow.callnum and checkout is not null and borrow.libuid = libuser.libuid;";
+        System.out.println("|CallNum|CopyNum|Title|Author|Check-out|Returned?|");
+        SQLQuery.search_user_record(con, sqlQuery);
+        System.out.println("End of Query");
+    }
+
     private static void search_operation(String searchOption, Connection con){
         System.out.print("Type in the Search Keyword: ");
         Scanner inputScanner = new Scanner(System.in);
@@ -515,6 +548,7 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
             System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
             SQLQuery.search_book(con, sqlQuery);
+            System.out.println("End of Query");
         } else if (searchOption.equals("2")) {
             String title = inputScanner.next();
             String sqlQuery = "select book.callnum, title, bcname, aname, rating "
@@ -522,6 +556,7 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
             System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
             SQLQuery.search_book(con, sqlQuery);
+            System.out.println("End of Query");
         } else if (searchOption.equals("3")) {
             String author = inputScanner.next();
             String sqlQuery = "select book.callnum, title, bcname, aname, rating "
@@ -529,6 +564,7 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
             System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
             SQLQuery.search_book(con, sqlQuery);
+            System.out.println("End of Query");
         }
     }
 
