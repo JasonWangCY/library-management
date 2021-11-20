@@ -1,4 +1,9 @@
 import java.util.Scanner;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 
 class Utility{
     public static String choiceQuestionString = "What kinds of operations would you like to perform?";
@@ -28,6 +33,30 @@ class Utility{
             }
         }
         System.out.println(baseString);
+    }
+}
+
+class SQLConnection{
+    public static Connection connect_to_sql(String dbAddress, String dbUsername, String dbPassword){
+        Connection con = null;
+        try{
+            Class.forName("com.mysql.jdbc.Driver");
+            con = DriverManager.getConnection(dbAddress, dbUsername, dbPassword);
+            // Statement myStatement = con.createStatement();
+
+
+            //insertion query
+            // String sqlQuery1 = "create table test (test_id integer);";
+            // myStatement.executeUpdate(sqlQuery1);
+
+            // System.out.println("Creation Completed");
+        }catch (ClassNotFoundException e){
+            System.out.println("[Error]: Java MySQL DB Driver not found!");
+            System.exit(0);
+        }catch (SQLException e){
+            System.out.println(e);
+        }
+        return con;
     }
 }
 
@@ -74,6 +103,12 @@ class Main{
 
     }
     public static void main(String [] args){
+        String dbAddress = "jdbc:mysql://projgw.cse.cuhk.edu.hk:2633/db42";
+        String dbUsername = "Group42";
+        String dbPassword = "physicsisawesome";
+
+        Connection con = SQLConnection.connect_to_sql(dbAddress, dbUsername, dbPassword);
+        
         print_greeting_strings();
         boolean continueFlag = true;
         try{
