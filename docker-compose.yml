@@ -18,6 +18,7 @@ services:
       - "./schema.sql:/home/Project/schema.sql"
       - "./sample_data:/home/Project/sample_data"
       - "./main.java:/home/Project/main.java"
+      - "./buildProject.sh:/home/Project/buildProject.sh"
 
   admin:
     image: phpmyadmin/phpmyadmin

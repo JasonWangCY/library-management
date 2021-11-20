@@ -1,4 +1,7 @@
 import java.util.*;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.concurrent.TimeUnit;
 import java.sql.*;
 import java.io.*;
 
@@ -14,7 +17,7 @@ class Utility{
         return true;
     }
     public static void print_choice_selection_error_message(int choiceNo){
-        String baseString = "[Error]: Please enter either ";
+        String baseString = Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Please enter either ";
         for(int i = 1; i<=choiceNo; i++){
             if (i == choiceNo){
                 baseString += " " +String.valueOf(i)+"!";
@@ -38,6 +41,52 @@ class Utility{
         String day = date_array[0];
         return year+"-"+month+"-"+day;
     }
+    public static String get_today_date(){
+        Date date = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        return dateFormat.format(date);
+    }
+    public static String get_today_date_format(){
+        Date date = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return dateFormat.format(date);
+    }
+
+    private static String dbAddress = "jdbc:mysql://projgw.cse.cuhk.edu.hk:2633/db42";
+    private static String dbUsername = "Group42";
+    private static String dbPassword = "physicsisawesome";
+
+    private static Connection connect_to_sql(String dbAddress, String dbUsername, String dbPassword) {
+        Connection con = null;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            con = DriverManager.getConnection(dbAddress, dbUsername, dbPassword);
+        } catch (ClassNotFoundException e) {
+            System.out.println(e);
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + ": Java MySQL DB Driver not found!");
+            System.exit(0);
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return con;
+    }
+
+    public static Connection get_connection(){
+        return connect_to_sql(Utility.dbAddress, Utility.dbUsername, Utility.dbPassword);
+    }
+    
+    public static final String ANSI_BOLD = "\033[1m";
+    public static final String ANSI_BOLD_RESET = "\033[0m";
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    // Underline with white 
+    public static final String ANSI_WHITE_UNDERLINED = "\033[4;37m";
+    // Underline with black
+    public static final String ANSI_BLACK_UNDERLINED = "\033[4;30m";
+    // Reset underline
+    public static final String ANSI_UNDERLINE_RESET = "\033[0;0m";
+    public static final long GLOBAL_SLEEP_TIME = 500;
 }
 
 class Schema{
@@ -94,22 +143,6 @@ class Schema{
         + "FOREIGN KEY(callnum) REFERENCES book(callnum),"
         + "FOREIGN KEY(copynum, callnum) REFERENCES copy(copynum, callnum) ON UPDATE CASCADE ON DELETE CASCADE"
         + ");";
-}
-
-class SQLConnection{
-    public static Connection connect_to_sql(String dbAddress, String dbUsername, String dbPassword){
-        Connection con = null;
-        try{
-            Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection(dbAddress, dbUsername, dbPassword);
-        }catch (ClassNotFoundException e){
-            System.out.println("[Error]: Java MySQL DB Driver not found!");
-            System.exit(0);
-        }catch (SQLException e){
-            System.out.println(e);
-        }
-        return con;
-    }
 }
 
 class SQLQuery{
@@ -342,7 +375,7 @@ class Main{
             return true;
         }
         else if(userOption.equals("3")){
-            Librarian.main();
+            Librarian.main(con);
             return true;
         }
         else{
@@ -352,11 +385,8 @@ class Main{
 
     }
     public static void main(String [] args){
-        String dbAddress = "jdbc:mysql://projgw.cse.cuhk.edu.hk:2633/db42";
-        String dbUsername = "Group42";
-        String dbPassword = "physicsisawesome";
 
-        Connection con = SQLConnection.connect_to_sql(dbAddress, dbUsername, dbPassword);
+        Connection con = Utility.get_connection();
         
         print_greeting_strings();
         boolean continueFlag = true;
@@ -372,7 +402,9 @@ class Main{
                         userOption = inputScanner.next();
                     } while (Utility.choice_error_condition(userOption, Main.choiceNo));
                 }
+                TimeUnit.MILLISECONDS.sleep(Utility.GLOBAL_SLEEP_TIME);
                 continueFlag = do_operation(userOption, con);
+                TimeUnit.MILLISECONDS.sleep(Utility.GLOBAL_SLEEP_TIME);
             }while (continueFlag);
         }catch (Exception e){
             System.out.println(e);
@@ -428,13 +460,16 @@ class Administrator {
         SQLQuery.sql_operation(con, Schema.create_authorship);
         SQLQuery.sql_operation(con, Schema.create_copy);
         SQLQuery.sql_operation(con, Schema.create_borrow);
-        System.out.println("Processing...Done. Database is initialized.");
+        System.out.println( Utility.ANSI_BOLD + Utility.ANSI_GREEN +"[Success]"+Utility.ANSI_RESET + Utility.ANSI_BOLD_RESET +" Processing... Done. Database is "
+                + Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD + "initialized" + Utility.ANSI_BOLD_RESET+ Utility.ANSI_UNDERLINE_RESET + ".");
     }
     
     private static void administrator_choice_2(Connection con) {
         String drop_all_tables = "drop tables borrow, copy, authorship, book, book_category, libuser, user_category;";
         SQLQuery.sql_operation(con, drop_all_tables);
-        System.out.println("Processing...Done. Database is removed.");
+        System.out.println(
+                Utility.ANSI_BOLD + Utility.ANSI_GREEN +"[Success]"+Utility.ANSI_RESET + Utility.ANSI_BOLD_RESET  + " Processing... Done. Database is "+ Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
+                        + "removed" + Utility.ANSI_BOLD_RESET+ Utility.ANSI_UNDERLINE_RESET+".");
     }
 
     private static void administrator_choice_3(Connection con) {
@@ -442,11 +477,15 @@ class Administrator {
         Scanner inputScanner = new Scanner(System.in);
         String folderPath = inputScanner.next();
         SQLQuery.read_data(con, folderPath);
-        System.out.println("Processing...Done. Database is inputted to the database.");
+        System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN +"[Success]"+Utility.ANSI_RESET + Utility.ANSI_BOLD_RESET 
+                + " Processing... Done. Database is " + Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
+                + "input to the database" + Utility.ANSI_BOLD_RESET
+                + Utility.ANSI_UNDERLINE_RESET + ".");
     }
 
     private static void administrator_choice_4(Connection con) {
-        System.out.print("Numer of records in each table:\n");
+        System.out.print(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
+                + Utility.ANSI_BOLD_RESET + " Number of records in each table:\n");
         SQLQuery.sql_count(con, "user_category");
         SQLQuery.sql_count(con, "libuser");
         SQLQuery.sql_count(con, "book_category");
@@ -471,6 +510,7 @@ class Administrator {
                     } while (Utility.choice_error_condition(userOption, Administrator.choiceNo));
                 }
                 continueFlag = do_operation(userOption, con);
+                TimeUnit.MILLISECONDS.sleep(Utility.GLOBAL_SLEEP_TIME);
             }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
@@ -541,7 +581,8 @@ class LibraryUser{
             + "and book.callnum=borrow.callnum and checkout is not null and borrow.libuid = libuser.libuid;";
         System.out.println("|CallNum|CopyNum|Title|Author|Check-out|Returned?|");
         SQLQuery.search_user_record(con, sqlQuery);
-        System.out.println("End of Query");
+        System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
+                + Utility.ANSI_BOLD_RESET +" End of Query");
     }
 
     private static void search_operation(String searchOption, Connection con){
@@ -553,17 +594,19 @@ class LibraryUser{
             String sqlQuery = "select book.callnum, title, bcname, aname, rating "
                 + "from book, book_category, authorship where book.callnum = '" + callnum + "' "
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
-            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
+            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy|");
             SQLQuery.search_book(con, sqlQuery);
-            System.out.println("End of Query");
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
+                    + Utility.ANSI_BOLD_RESET +" End of Query");
         } else if (searchOption.equals("2")) {
             String title = inputScanner.next();
             String sqlQuery = "select book.callnum, title, bcname, aname, rating "
                 + "from book, book_category, authorship where book.title like '%" + title + "%' "
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
-            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
+            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy|");
             SQLQuery.search_book(con, sqlQuery);
-            System.out.println("End of Query");
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
+                    + Utility.ANSI_BOLD_RESET +" End of Query");
         } else if (searchOption.equals("3")) {
             String author = inputScanner.next();
             String sqlQuery = "select book.callnum, title, bcname, aname, rating "
@@ -571,7 +614,7 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
             System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
             SQLQuery.search_book(con, sqlQuery);
-            System.out.println("End of Query");
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" End of Query");
         }
     }
 
@@ -590,6 +633,7 @@ class LibraryUser{
                     } while (Utility.choice_error_condition(userOption, LibraryUser.choiceNo));
                 }
                 continueFlag = do_operation(userOption, con);
+                TimeUnit.MILLISECONDS.sleep(Utility.GLOBAL_SLEEP_TIME);
             }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
@@ -620,22 +664,125 @@ class Librarian {
         System.out.print(dbmsEnterChoice);
     }
 
-    private static boolean do_operation(String userOption) {
+    private static boolean do_operation(String userOption, Connection con) {
         if (userOption.equals("1")) {
-            librarian_choice_1();
+            librarian_choice_1(con);
             return true;
         } else if (userOption.equals("2")) {
-            librarian_choice_2();
+            librarian_choice_2(con);
             return true;
         } else if (userOption.equals("3")) {
-            librarian_choice_3();
+            librarian_choice_3(con);
             return true;
         } else {
             return false;
         }
     }
 
-    private static String enter_user_id(){
+    // a boolean check_userID_available function that inputs an userID through
+    // connection con and check whether
+    // the userID exists in the table libuser where libuid = userID. If exists,
+    // return false, else return true.
+    private static boolean check_userID_available(String userID, Connection con) {
+        String sql = "SELECT * FROM libuser WHERE libuid = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, userID);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return true;
+    }
+
+    // a boolean check_callNumber_available function that inputs a callNumber through
+    // connection con and check whether
+    // the callNumber exists in the table book where callnum = callNumber. If exists,
+    // return false, else return true.
+    private static boolean check_callNumber_available(String callNumber, Connection con) {
+        String sql = "SELECT * FROM book WHERE callnum = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, callNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return true;
+    }
+
+    // a boolean check_copyNumber_availble function that inputs a string callNumber and a int copyNumber through
+    // connection con and check whether
+    // the copyNumber of book callNumber exists in the table copy where callnum = callNumber and copynum = userID. If exists,
+    // return false, else return true.
+    private static boolean check_copyNumber_available(String callNumber, int copyNumber, Connection con) {
+        String sql = "SELECT * FROM copy WHERE callnum = ? and copynum = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, callNumber);
+            pstmt.setInt(2, copyNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return true;
+    }
+
+    //a boolean _check_date_format_correct function that has two parts.
+    // It inputs a string date. The first part is to check whether it is
+    // in the format of dd/mm/yyyy.
+    // Another part is to check if the date is in between 1900-01-01 and today through Utility.get_today_date(). If not, return true,
+    // else return false.
+    private static boolean check_date_format_correct(String date) {
+        if (date.matches("\\d{2}/\\d{2}/\\d{4}")) {
+            String[] dateArray = date.split("/");
+            int day = Integer.parseInt(dateArray[0]);
+            int month = Integer.parseInt(dateArray[1]);
+            int year = Integer.parseInt(dateArray[2]);
+            String todayDate = Utility.get_today_date();
+            String[] todayDateArray = todayDate.split("/");
+            int todayDay = Integer.parseInt(todayDateArray[0]);
+            int todayMonth = Integer.parseInt(todayDateArray[1]);
+            int todayYear = Integer.parseInt(todayDateArray[2]);
+            //compare input date is in the range of 01/01/1900 and today date
+            if (year >= 1900 && year <= todayYear && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                if (year == todayYear) {
+                    if (month == todayMonth) {
+                        if (day <= todayDay) {
+                            return false;
+                        }
+                    } else if (month < todayMonth) {
+                        return false;
+                    }
+                } else if (year < todayYear) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    //a check_rating_format_correct function that inputs a float rating
+    // and check whether it is in the range of 0 to 10 (inclusive).
+    // if correct, return false, else return true.
+    private static boolean check_rating_format_correct(float rating) {
+        if (rating >= 0 && rating <= 10) {
+            return false;
+        }
+        return true;
+    }
+
+    
+    private static String enter_user_id(Connection con){
         String userID;
         boolean userIDErrorFlag;
         do {
@@ -643,9 +790,9 @@ class Librarian {
             try{
                 System.out.print("Enter the user ID: ");
                 userID = inputScanner.next();
-                userIDErrorFlag = check_userID_available(userID);
+                userIDErrorFlag = check_userID_available(userID, con);
                 if (!userIDErrorFlag) {
-                    System.out.println("User ID \""+userID+"\" is not available.");
+                    System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " User ID \""+userID+"\" does not exist.");
                 }
             }finally{
                 inputScanner.close();
@@ -654,7 +801,7 @@ class Librarian {
         return userID;
     }
 
-    private static String enter_call_number(){
+    private static String enter_call_number(Connection con){
         String callNumber;
         boolean callNumberErrorFlag;
         do {
@@ -662,9 +809,9 @@ class Librarian {
             try{
                 System.out.print("Enter the call number: ");
                 callNumber = inputScanner.next();
-                callNumberErrorFlag = check_call_number_available(callNumber);
-                if (!callNumberErrorFlag) {
-                    System.out.println("Call number \""+callNumber+"\" is not available.");
+                callNumberErrorFlag = check_callNumber_available(callNumber, con);
+                if (callNumberErrorFlag) {
+                    System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Call number \""+callNumber+"\" does not exist.");
                 }
             }finally{
                 inputScanner.close();
@@ -673,7 +820,7 @@ class Librarian {
         return callNumber;
     }
 
-    private static int enter_copy_number(){
+    private static int enter_copy_number(String callNumber, Connection con){
         int copyNumber;
         boolean copyNumberErrorFlag;
         do {
@@ -681,9 +828,9 @@ class Librarian {
             try{
                 System.out.print("Enter the copy number: ");
                 copyNumber = inputScanner.nextInt();
-                copyNumberErrorFlag = check_copy_number_available(copyNumber);
-                if (!copyNumberErrorFlag) {
-                    System.out.println("Copy number \""+copyNumber+"\" is not available.");
+                copyNumberErrorFlag = check_copyNumber_available(callNumber, copyNumber, con);
+                if (copyNumberErrorFlag) {
+                    System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Copy number \""+copyNumber+"\" does not exist.");
                 }
             }finally{
                 inputScanner.close();
@@ -700,9 +847,9 @@ class Librarian {
             try{
                 System.out.print("Enter the rating (0-10): ");
                 rating = inputScanner.nextInt();
-                ratingErrorFlag = check_rating_available(rating);
-                if (!ratingErrorFlag) {
-                    System.out.println("Expected input a value between 0 and 10! Found "+rating+".");
+                ratingErrorFlag = check_rating_format_correct(rating);
+                if (ratingErrorFlag) {
+                    System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Expected input a value between 0 and 10!");
                 }
             }finally{
                 inputScanner.close();
@@ -711,53 +858,255 @@ class Librarian {
         return rating;
     }
 
-    private static void borrow_book(String userID, String callNumber, int copyNumber){
-        ;
+    private static String enter_start_date(){
+        String startDate;
+        boolean startDateErrorFlag;
+        do {
+            Scanner inputScanner = new Scanner(System.in);
+            try{
+                System.out.print("Type in the starting date [dd/mm/yyyy]: ");
+                startDate = inputScanner.next();
+                startDateErrorFlag = check_date_format_correct(startDate);
+                if (!startDateErrorFlag) {
+                    System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Please enter a date before or on today ("+ Utility.get_today_date() + ")");
+                }
+            }
+            finally{
+                inputScanner.close();
+            }
+        }while(startDateErrorFlag);
+        return Utility.parse_date_format(startDate);
     }
 
-    private static void librarian_choice_1() {
+    private static String enter_end_date() {
+        String endDate;
+        boolean endDateErrorFlag;
+        do {
+            Scanner inputScanner = new Scanner(System.in);
+            try {
+                System.out.print("Type in the ending date [dd/mm/yyyy]: ");
+                endDate = inputScanner.next();
+                endDateErrorFlag = check_date_format_correct(endDate);
+                if (endDateErrorFlag) {
+                    System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Please enter a date before or on today ("+ Utility.get_today_date() +")");
+                }
+            } finally {
+                inputScanner.close();
+            }
+        } while (endDateErrorFlag);
+        return Utility.parse_date_format(endDate);
+    }
+
+    // a borrow_book function that inputs string userID, string callNumber, int copyNumber, string todayDate through Connection con and insert 
+    // into the table borrow with field libuid, callnum, copynum, checkout, and leave field return null
+    private static void borrow_book(String userID, String callNumber, int copyNumber, String todayDate, Connection con) {
+        String sql = "INSERT INTO borrow (libuid, callnum, copynum, checkout, return) VALUES (?, ?, ?, ?, ?)";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, userID);
+            pstmt.setString(2, callNumber);
+            pstmt.setInt(3, copyNumber);
+            pstmt.setString(4, todayDate);
+            pstmt.setString(5, null);
+            pstmt.executeUpdate();
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
+                + "borrowing" + Utility.ANSI_BOLD_RESET
+                + Utility.ANSI_UNDERLINE_RESET +" performed successfully.");
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+    }
+
+    // an update_book_time_borrowed function that inputs string callNumber through Connection con and 
+    // increases the value tborrowed by 1 in the table book where callnum is equal to callNumber
+    private static void update_book_time_borrowed(String callNumber, Connection con) {
+        String sql = "UPDATE book SET tborrowed = tborrowed + 1 WHERE callnum = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, callNumber);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+    }
+
+    // a userID_callNumber_copyNumber_exists function that inputs string userID, string callNumber, int copyNumber through Connection con and get number of rows
+    //  this unique combination of userID, callNumber, and copyNumber is available in the table borrow with fields libuid, callnum, copynum
+    //  if the number of rows is greater than 0, return true, otherwise return false
+    private static boolean _userID_callNumber_copyNumber_exists(String userID, String callNumber, int copyNumber, Connection con) {
+        String sql = "SELECT * FROM borrow WHERE libuid = ? AND callnum = ? AND copynum = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, userID);
+            pstmt.setString(2, callNumber);
+            pstmt.setInt(3, copyNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return false;
+    }
+
+    // a return_book function that inputs string userID, string callNumber, int copyNumber, string todayDate through Connection con and update
+    // the table borrow with field return = todayDate where libuid = userID and callnum = callNumber and copynum = copyNumber, and output error
+    // if the userID, callNumber and copyNumber are not found in the table borrow
+    private static void return_book(String userID, String callNumber, int copyNumber, String todayDate, Connection con) {
+        boolean userIDCallNumberCopyNumberExists = _userID_callNumber_copyNumber_exists(userID, callNumber, copyNumber, con);
+        if (userIDCallNumberCopyNumberExists) {
+            String sql = "UPDATE borrow SET return = ? WHERE libuid = ? AND callnum = ? AND copynum = ?";
+            try {
+                PreparedStatement pstmt = con.prepareStatement(sql);
+                pstmt.setString(1, todayDate);
+                pstmt.setString(2, userID);
+                pstmt.setString(3, callNumber);
+                pstmt.setInt(4, copyNumber);
+                pstmt.executeUpdate();
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
+                + "returning" + Utility.ANSI_BOLD_RESET
+                + Utility.ANSI_UNDERLINE_RESET+ " performed successfully.");
+            } catch (SQLException e) {
+                System.out.println(e);
+            }
+        } else {
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Record of user \""+userID +"\" borrowing book \""+ callNumber +"\" copy \"" + copyNumber +"\" is not found in the database.");
+        }
+    }
+
+    //a float _get_book_rating function that inputs string callNumber through Connection con and get the rating of the book
+    // from table book with field callnum and return the rating. If not found book, return -1.
+    private static float _get_book_rating(String callNumber, Connection con) {
+        String sql = "SELECT rating FROM book WHERE callnum = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, callNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getFloat("rating");
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return -1;
+    }
+
+    //an int _get_num_borrows function that inputs string callNumber through Connection con and get the number of borrows of the book
+    // from table borrow with field callnum and return the number of borrows. If not found book, return -1.
+    private static int _get_num_borrows(String callNumber, Connection con) {
+        String sql = "SELECT tborrowed FROM book WHERE callnum = ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, callNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return -1;
+    }
+
+    //an update_book_rating function that get float originalRating through _get_book_rating function, int numBorrows through _get_num_borrows function,
+    // input string callNumber and float newRating through Connection con and update the table book with field rating = (originalRating * numBorrows + newRating) / (numBorrows + 1)
+    // and output sql error if originalRating and numBorrows are -1.
+    private static void update_book_rating(String callNumber, float newRating, Connection con) {
+        float originalRating = _get_book_rating(callNumber, con);
+        int numBorrows = _get_num_borrows(callNumber, con);
+        if (originalRating != -1 && numBorrows != -1) {
+            String sql = "UPDATE book SET rating = ? WHERE callnum = ?";
+            try {
+                PreparedStatement pstmt = con.prepareStatement(sql);
+                pstmt.setFloat(1, (originalRating * numBorrows + newRating) / (numBorrows + 1));
+                pstmt.setString(2, callNumber);
+                pstmt.executeUpdate();
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book rating "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
+                + "updated" + Utility.ANSI_BOLD_RESET
+                + Utility.ANSI_UNDERLINE_RESET+" successfully.");
+            } catch (SQLException e) {
+                System.out.println(e);
+            }
+        } else {
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Cannot update the book's rating.");
+        }
+    }
+    
+    //a void get_all_unreturned_books function that get the string startDate and string endDate through connection con and
+    // find all the rows with return is null and checkout (borrowed date) is between startDate and endDate,
+    // print out all the rows with fields libuid, callnum, copynum, checkout with header
+    // |LibUID|CallNum|CopyNum|Checkout|
+    private static void get_all_unreturned_books(String startDate, String endDate, Connection con) {
+        String sql = "SELECT * FROM borrow WHERE return IS NULL AND checkout BETWEEN ? AND ?";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, startDate);
+            pstmt.setString(2, endDate);
+            ResultSet rs = pstmt.executeQuery();
+            System.out.println("|LibUID|CallNum|CopyNum|Checkout|");
+            while (rs.next()) {
+                System.out.println("|" + rs.getString("libuid") + "|" + rs.getString("callnum") + "|" + rs.getInt("copynum") + "|" + rs.getString("checkout") + "|");
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+    }
+
+    private static void librarian_choice_1(Connection con) {
         boolean transactionErrorFlag = false;
-        String userID = enter_user_id();
-        String callNumber = enter_call_number();
-        int copyNumber = enter_copy_number();
+        String userID = enter_user_id(con);
+        String callNumber = enter_call_number(con);
+        int copyNumber = enter_copy_number(callNumber, con);
+        String todayDate = Utility.get_today_date_format();
         try{
-            borrow_book(userID, callNumber, copyNumber);
+            borrow_book(userID, callNumber, copyNumber, todayDate, con);
+            update_book_time_borrowed(callNumber, con);
         } catch (Exception e) {
             transactionErrorFlag = true;
             System.out.println(e);
         }
         if (transactionErrorFlag) {
-            System.out.println("Book borrowing failed.");
-        } else {
-            System.out.println("Book borrowing performed successfully.");
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Book borrowing failed.");
         }
     }
 
-    private static void librarian_choice_2() {
+    private static void librarian_choice_2(Connection con) {
         boolean transactionErrorFlag = false;
-        String userID = enter_user_id();
-        String callNumber = enter_call_number();
-        int copyNumber = enter_copy_number();
+        String userID = enter_user_id(con);
+        String callNumber = enter_call_number(con);
+        int copyNumber = enter_copy_number(callNumber, con);
         float bookRating = enter_rating();
+        String todayDate = Utility.get_today_date_format();
         try{
-            return_book(userID, callNumber, copyNumber, bookRating);
+            return_book(userID, callNumber, copyNumber,todayDate, con);
+            update_book_rating(callNumber, bookRating, con);
         }catch (Exception e){
             transactionErrorFlag = true;
             System.out.println(e);
         }
         if (transactionErrorFlag) {
-            System.out.println("Book returning failed.");
-        } else {
-            System.out.println("Book returning performed successfully.");
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Book returning failed.");
         }
     }
 
-    private static void library_choice_3(){
+    private static void librarian_choice_3(Connection con) {
         boolean transactionErrorFlag = false;
-        
+        String startDate = enter_start_date();
+        String endDate = enter_end_date();
+        try{
+            get_all_unreturned_books(startDate, endDate, con);
+        }
+        catch (Exception e){
+            transactionErrorFlag = true;
+            System.out.println(e);
+        }
+        if (transactionErrorFlag) {
+            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Cannot fetch the unreturned books.");
+        }
     }
 
-    public static void main() {
+    public static void main(Connection con) {
         boolean continueFlag = true;
         try {
             do{
@@ -772,7 +1121,8 @@ class Librarian {
                             userOption = inputScanner.next();
                         } while (Utility.choice_error_condition(userOption, Librarian.choiceNo));
                     }
-                    continueFlag = do_operation(userOption);
+                    continueFlag = do_operation(userOption, con);
+                    TimeUnit.MILLISECONDS.sleep(Utility.GLOBAL_SLEEP_TIME);
                 }
                 finally{
                     inputScanner.close();
