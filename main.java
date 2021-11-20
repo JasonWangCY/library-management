@@ -31,6 +31,13 @@ class Utility{
         }
         System.out.println(baseString);
     }
+    public static String parse_date_format(String date){
+        String[] date_array = date.split("/");
+        String year = date_array[2];
+        String month = date_array[1];
+        String day = date_array[0];
+        return year+"-"+month+"-"+day;
+    }
 }
 
 class Schema{
