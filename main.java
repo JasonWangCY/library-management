@@ -198,28 +198,33 @@ class LibraryUser{
         System.out.print(dbmsEnterChoice);
     }
     
-    private static void do_operation(String userOption) {
+    private static boolean do_operation(String userOption) {
         if (userOption.equals("1")) {
             ;
+            return true;
         } else if (userOption.equals("2")) {
             ;
+            return true;
         } else {
-            return;
+            return false;
         }
     }
     public static void main(){
+        boolean continueFlag = true;
         try {
-            Scanner inputScanner = new Scanner(System.in);
-            initialization(Utility.choiceQuestionString, Utility.enterChoice);
-            String userOption = inputScanner.next();
-            if (Utility.choice_error_condition(userOption, LibraryUser.choiceNo)) {
-                do {
-                    Utility.print_choice_selection_error_message(LibraryUser.choiceNo);
-                    System.out.print(Utility.enterChoice);
-                    userOption = inputScanner.next();
-                } while (Utility.choice_error_condition(userOption, LibraryUser.choiceNo));
-            }
-            do_operation(userOption);
+            do{
+                Scanner inputScanner = new Scanner(System.in);
+                initialization(Utility.choiceQuestionString, Utility.enterChoice);
+                String userOption = inputScanner.next();
+                if (Utility.choice_error_condition(userOption, LibraryUser.choiceNo)) {
+                    do {
+                        Utility.print_choice_selection_error_message(LibraryUser.choiceNo);
+                        System.out.print(Utility.enterChoice);
+                        userOption = inputScanner.next();
+                    } while (Utility.choice_error_condition(userOption, LibraryUser.choiceNo));
+                }
+                continueFlag = do_operation(userOption);
+            }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -249,30 +254,36 @@ class Librarian {
         System.out.print(dbmsEnterChoice);
     }
 
-    private static void do_operation(String userOption) {
+    private static boolean do_operation(String userOption) {
         if (userOption.equals("1")) {
             ;
+            return true;
         } else if (userOption.equals("2")) {
             ;
+            return true;
         } else if (userOption.equals("3")) {
             ;
+            return true;
         } else {
-            return;
+            return false;
         }
     }
     public static void main() {
+        boolean continueFlag = true;
         try {
-            Scanner inputScanner = new Scanner(System.in);
-            initialization(Utility.choiceQuestionString, Utility.enterChoice);
-            String userOption = inputScanner.next();
-            if (Utility.choice_error_condition(userOption, Librarian.choiceNo)) {
-                do {
-                    Utility.print_choice_selection_error_message(Librarian.choiceNo);
-                    System.out.print(Utility.enterChoice);
-                    userOption = inputScanner.next();
-                } while (Utility.choice_error_condition(userOption, Librarian.choiceNo));
-            }
-            do_operation(userOption);
+            do{
+                Scanner inputScanner = new Scanner(System.in);
+                initialization(Utility.choiceQuestionString, Utility.enterChoice);
+                String userOption = inputScanner.next();
+                if (Utility.choice_error_condition(userOption, Librarian.choiceNo)) {
+                    do {
+                        Utility.print_choice_selection_error_message(Librarian.choiceNo);
+                        System.out.print(Utility.enterChoice);
+                        userOption = inputScanner.next();
+                    } while (Utility.choice_error_condition(userOption, Librarian.choiceNo));
+                }
+                continueFlag = do_operation(userOption);
+            }while(continueFlag);
         } catch (Exception e) {
             System.out.println(e);
         }
