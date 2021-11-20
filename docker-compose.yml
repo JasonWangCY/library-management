@@ -16,9 +16,6 @@ services:
     restart: always
     volumes:
       - "./schema.sql:/home/Project/schema.sql"
-      - "./update.java:/home/Project/update.java"
-      - "./delete.java:/home/Project/delete.java"
-      - "./insert.java:/home/Project/insert.java"
       - "./sample_data:/home/Project/sample_data"
       - "./main.java:/home/Project/main.java"
 
