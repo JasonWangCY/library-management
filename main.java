@@ -175,13 +175,19 @@ class SQLQuery{
             ResultSet rs = stmt.executeQuery(sqlQuery);
 
             if(!rs.isBeforeFirst())
-                System.out.println("No records found.");
-            else while(rs.next()){
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " No such book exists in the library.");
+            else {
+                System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy|");
+                while(rs.next()){
                 System.out.print("|"+rs.getString("callnum"));
                 System.out.print("|"+rs.getString("title"));
                 System.out.print("|"+rs.getString("bcname"));
                 System.out.print("|"+rs.getString("aname"));
-                System.out.print("|"+rs.getString("rating")+"|\n");
+                System.out.print("|"+rs.getString("rating"));
+                System.out.print("|"+rs.getString("num_of_copies")+"|\n");
+                }
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
+                    + Utility.ANSI_BOLD_RESET +" End of Query");
             }
         }catch (Exception e){
             System.out.println(e);
@@ -193,14 +199,19 @@ class SQLQuery{
             ResultSet rs = stmt.executeQuery(sqlQuery);
 
             if(!rs.isBeforeFirst())
-                System.out.println("No records found.");
-            else while(rs.next()){
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " User ID does not exist.");
+            else {
+                System.out.println("|CallNum|CopyNum|Title|Author|Check-out|Returned?|");
+                while(rs.next()){
                 System.out.print("|"+rs.getString("callnum"));
                 System.out.print("|"+rs.getString("title"));
                 System.out.print("|"+rs.getString("copynum"));
                 System.out.print("|"+rs.getString("aname"));
                 System.out.print("|"+rs.getString("checkout"));
                 System.out.print("|"+rs.getString("returned")+"|\n");
+                }
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
+                        + Utility.ANSI_BOLD_RESET +" End of Query");
             }
         }catch (Exception e){
             System.out.println(e);
@@ -274,12 +285,13 @@ class SQLQuery{
             BufferedReader br = new BufferedReader(new FileReader(file));
             PreparedStatement stmt1 = con.prepareStatement("insert into book values (?,?,?,?,?,?)");
             PreparedStatement stmt2 = con.prepareStatement("insert into authorship values (?,?)");
+            PreparedStatement stmt3 = con.prepareStatement("insert into copy values (?,?)");
 
             String st = null;
             while ((st = br.readLine()) != null){
                 String[] split = st.split("\t");
                 String callnum = split[0].trim();
-                int num_of_copies = Integer.parseInt(split[1].trim()); //where is this in the schema??
+                int num_of_copies = Integer.parseInt(split[1].trim());
                 String title = split[2].trim();
                 String aname = split[3].trim();
                 String publish = split[4].trim();
@@ -302,6 +314,12 @@ class SQLQuery{
                 stmt2.setString(1, aname);
                 stmt2.setString(2, callnum);
                 stmt2.executeUpdate();
+
+                for (int i=1; i<=num_of_copies; i++) {
+                    stmt3.setInt(1, i);
+                    stmt3.setString(2, callnum);
+                    stmt3.executeUpdate();
+                }
             }
         }catch (Exception e){
             System.out.println(e);
@@ -310,7 +328,7 @@ class SQLQuery{
         try{
             File file = new File(folderPath + "/check_out.txt");
             BufferedReader br = new BufferedReader(new FileReader(file));
-            PreparedStatement stmt1 = con.prepareStatement("insert into copy values (?,?)");
+            //PreparedStatement stmt1 = con.prepareStatement("insert into copy values (?,?)");
             PreparedStatement stmt2 = con.prepareStatement("insert into borrow values (?,?,?,?,?)");
 
             String st = null;
@@ -318,9 +336,9 @@ class SQLQuery{
                 String[] split = st.split("\t");
                 String callnum = split[0].trim();
                 int copynum = Integer.parseInt(split[1].trim());
-                stmt1.setInt(1, copynum);
-                stmt1.setString(2, callnum);
-                stmt1.executeUpdate();
+                // stmt1.setInt(1, copynum);
+                // stmt1.setString(2, callnum);
+                // stmt1.executeUpdate();
 
                 String libuid = split[2].trim();
                 String checkout = split[3].trim();
@@ -579,10 +597,7 @@ class LibraryUser{
             + "from book, borrow, authorship, libuser "
             + "where libuser.libuid = '" + userID + "' and book.callnum=authorship.callnum "
             + "and book.callnum=borrow.callnum and checkout is not null and borrow.libuid = libuser.libuid;";
-        System.out.println("|CallNum|CopyNum|Title|Author|Check-out|Returned?|");
         SQLQuery.search_user_record(con, sqlQuery);
-        System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
-                + Utility.ANSI_BOLD_RESET +" End of Query");
     }
 
     private static void search_operation(String searchOption, Connection con){
@@ -591,30 +606,37 @@ class LibraryUser{
 
         if (searchOption.equals("1")) {
             String callnum = inputScanner.next();
-            String sqlQuery = "select book.callnum, title, bcname, aname, rating "
+            String sqlQuery = "select copy.callnum, title, bcname, aname, rating, count(copy.callnum) as num_of_copies "
+                + "from copy, ( "
+                + "select book.callnum, title, bcname, aname, rating "
                 + "from book, book_category, authorship where book.callnum = '" + callnum + "' "
-                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
-            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy|");
+                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum"
+                + ") as T1 "
+                + "where copy.callnum = T1.callnum "
+                + "group by copy.callnum;";
             SQLQuery.search_book(con, sqlQuery);
-            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
-                    + Utility.ANSI_BOLD_RESET +" End of Query");
         } else if (searchOption.equals("2")) {
             String title = inputScanner.next();
-            String sqlQuery = "select book.callnum, title, bcname, aname, rating "
+            String sqlQuery = "select copy.callnum, title, bcname, aname, rating, count(copy.callnum) as num_of_copies "
+                + "from copy, ( "
+                + "select book.callnum, title, bcname, aname, rating "
                 + "from book, book_category, authorship where book.title like '%" + title + "%' "
-                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
-            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy|");
+                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum"
+                + ") as T1 "
+                + "where copy.callnum = T1.callnum "
+                + "group by copy.callnum;";
             SQLQuery.search_book(con, sqlQuery);
-            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET
-                    + Utility.ANSI_BOLD_RESET +" End of Query");
         } else if (searchOption.equals("3")) {
             String author = inputScanner.next();
-            String sqlQuery = "select book.callnum, title, bcname, aname, rating "
+            String sqlQuery = "select copy.callnum, title, bcname, aname, rating, count(copy.callnum) as num_of_copies "
+                + "from copy, ( "
+                + "select book.callnum, title, bcname, aname, rating "
                 + "from book, book_category, authorship where aname like '%" + author + "%' "
-                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum;";
-            System.out.println("|Call Num|Title|Book Category|Author|Rating|Available No. of Copy");
+                + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum"
+                + ") as T1 "
+                + "where copy.callnum = T1.callnum "
+                + "group by copy.callnum;";
             SQLQuery.search_book(con, sqlQuery);
-            System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" End of Query");
         }
     }
 
