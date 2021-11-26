@@ -113,7 +113,7 @@ class Schema{
     public static String create_book = "create table if not exists book("
         + "callnum CHAR(8) NOT NULL,"
         + "title VARCHAR(30) NOT NULL,"
-        + "publish CHAR(10) NOT NULL,"
+        + "publish DATE NOT NULL,"
         + "rating REAL UNSIGNED DEFAULT NULL,"
         + "tborrowed SMALLINT UNSIGNED NOT NULL,"
         + "bcid SMALLINT UNSIGNED NOT NULL,"
@@ -136,8 +136,8 @@ class Schema{
         + "libuid CHAR(10) NOT NULL,"
         + "callnum CHAR(8) NOT NULL,"
         + "copynum SMALLINT UNSIGNED NOT NULL,"
-        + "checkout CHAR(10) NOT NULL,"
-        + "`return` CHAR(10) DEFAULT NULL,"
+        + "checkout DATE NOT NULL,"
+        + "`return` DATE DEFAULT NULL,"
         + "PRIMARY KEY (callnum, copynum, libuid, checkout),"
         + "FOREIGN KEY(libuid) REFERENCES libuser(libuid) ON UPDATE CASCADE ON DELETE CASCADE," 
         + "FOREIGN KEY(callnum) REFERENCES book(callnum),"
@@ -204,8 +204,8 @@ class SQLQuery{
                 System.out.println("|CallNum|CopyNum|Title|Author|Check-out|Returned?|");
                 while(rs.next()){
                 System.out.print("|"+rs.getString("callnum"));
-                System.out.print("|"+rs.getString("title"));
                 System.out.print("|"+rs.getString("copynum"));
+                System.out.print("|"+rs.getString("title"));
                 System.out.print("|"+rs.getString("aname"));
                 System.out.print("|"+rs.getString("checkout"));
                 System.out.print("|"+rs.getString("returned")+"|\n");
@@ -295,6 +295,7 @@ class SQLQuery{
                 String title = split[2].trim();
                 String aname = split[3].trim();
                 String publish = split[4].trim();
+                publish = Utility.parse_date_format(publish);
                 if (!split[5].trim().equals("null")){
                     double rating = Double.parseDouble(split[5].trim());
                     stmt1.setDouble(4, rating);
@@ -328,31 +329,29 @@ class SQLQuery{
         try{
             File file = new File(folderPath + "/check_out.txt");
             BufferedReader br = new BufferedReader(new FileReader(file));
-            //PreparedStatement stmt1 = con.prepareStatement("insert into copy values (?,?)");
-            PreparedStatement stmt2 = con.prepareStatement("insert into borrow values (?,?,?,?,?)");
+            PreparedStatement stmt = con.prepareStatement("insert into borrow values (?,?,?,?,?)");
 
             String st = null;
             while ((st = br.readLine()) != null){
                 String[] split = st.split("\t");
                 String callnum = split[0].trim();
                 int copynum = Integer.parseInt(split[1].trim());
-                // stmt1.setInt(1, copynum);
-                // stmt1.setString(2, callnum);
-                // stmt1.executeUpdate();
 
                 String libuid = split[2].trim();
                 String checkout = split[3].trim();
+                checkout = Utility.parse_date_format(checkout);
                 if (!split[4].trim().equals("null")){
                     String return_date = split[4].trim();
-                    stmt2.setString(5, return_date);
+                    return_date = Utility.parse_date_format(return_date);
+                    stmt.setString(5, return_date);
                 } else {
-                    stmt2.setNull(5, Types.CHAR);
+                    stmt.setNull(5, Types.CHAR);
                 }
-                stmt2.setString(1, libuid);
-                stmt2.setString(2, callnum);
-                stmt2.setInt(3, copynum);
-                stmt2.setString(4, checkout);
-                stmt2.executeUpdate();
+                stmt.setString(1, libuid);
+                stmt.setString(2, callnum);
+                stmt.setInt(3, copynum);
+                stmt.setString(4, checkout);
+                stmt.executeUpdate();
             }
         }catch (Exception e){
             System.out.println(e);
@@ -593,10 +592,11 @@ class LibraryUser{
         Scanner inputScanner = new Scanner(System.in);
         String userID = inputScanner.next();
         
-        String sqlQuery = "select book.callnum, title, copynum, aname, checkout, 'Yes' as returned "
+        String sqlQuery = "select book.callnum, copynum, title, aname, checkout, 'Yes' as returned "
             + "from book, borrow, authorship, libuser "
             + "where libuser.libuid = '" + userID + "' and book.callnum=authorship.callnum "
-            + "and book.callnum=borrow.callnum and checkout is not null and borrow.libuid = libuser.libuid;";
+            + "and book.callnum=borrow.callnum and checkout is not null and borrow.libuid = libuser.libuid "
+            + "order by checkout desc;";
         SQLQuery.search_user_record(con, sqlQuery);
     }
 
@@ -613,7 +613,8 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum"
                 + ") as T1 "
                 + "where copy.callnum = T1.callnum "
-                + "group by copy.callnum;";
+                + "group by copy.callnum "
+                + "order by copy.callnum;";
             SQLQuery.search_book(con, sqlQuery);
         } else if (searchOption.equals("2")) {
             String title = inputScanner.next();
@@ -624,7 +625,8 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum"
                 + ") as T1 "
                 + "where copy.callnum = T1.callnum "
-                + "group by copy.callnum;";
+                + "group by copy.callnum "
+                + "order by copy.callnum;";
             SQLQuery.search_book(con, sqlQuery);
         } else if (searchOption.equals("3")) {
             String author = inputScanner.next();
@@ -635,7 +637,8 @@ class LibraryUser{
                 + "and book.bcid=book_category.bcid and book.callnum=authorship.callnum"
                 + ") as T1 "
                 + "where copy.callnum = T1.callnum "
-                + "group by copy.callnum;";
+                + "group by copy.callnum "
+                + "order by copy.callnum;";
             SQLQuery.search_book(con, sqlQuery);
         }
     }
