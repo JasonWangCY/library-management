@@ -707,66 +707,66 @@ class Librarian {
     // a boolean check_userID_available function that inputs an userID through
     // connection con and check whether
     // the userID exists in the table libuser where libuid = userID. If exists,
-    // return false, else return true.
+    // return true, else return false.
     private static boolean check_userID_available(String userID, Connection con) {
-        String sql = "SELECT * FROM libuser WHERE libuid = ?";
+        String sql = "SELECT * FROM libuser WHERE libuid = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, userID);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return false;
+                return true;
             }
         } catch (SQLException e) {
             System.out.println(e);
         }
-        return true;
+        return false;
     }
 
     // a boolean check_callNumber_available function that inputs a callNumber through
     // connection con and check whether
     // the callNumber exists in the table book where callnum = callNumber. If exists,
-    // return false, else return true.
+    // return true, else return false.
     private static boolean check_callNumber_available(String callNumber, Connection con) {
-        String sql = "SELECT * FROM book WHERE callnum = ?";
+        String sql = "SELECT * FROM book WHERE callnum = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, callNumber);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return false;
+                return true;
             }
         } catch (SQLException e) {
             System.out.println(e);
         }
-        return true;
+        return false;
     }
 
     // a boolean check_copyNumber_availble function that inputs a string callNumber and a int copyNumber through
     // connection con and check whether
     // the copyNumber of book callNumber exists in the table copy where callnum = callNumber and copynum = userID. If exists,
-    // return false, else return true.
+    // return true, else return false.
     private static boolean check_copyNumber_available(String callNumber, int copyNumber, Connection con) {
-        String sql = "SELECT * FROM copy WHERE callnum = ? and copynum = ?";
+        String sql = "SELECT * FROM copy WHERE callnum = (?) and copynum = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, callNumber);
             pstmt.setInt(2, copyNumber);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return false;
+                return true;
             }
         } catch (SQLException e) {
             System.out.println(e);
         }
-        return true;
+        return false;
     }
 
     //a boolean _check_date_format_correct function that has two parts.
     // It inputs a string date. The first part is to check whether it is
     // in the format of dd/mm/yyyy.
-    // Another part is to check if the date is in between 1900-01-01 and today through Utility.get_today_date(). If not, return true,
-    // else return false.
+    // Another part is to check if the date is in between 1900-01-01 and today through Utility.get_today_date(). If not, return false,
+    // else return true.
     private static boolean check_date_format_correct(String date) {
         if (date.matches("\\d{2}/\\d{2}/\\d{4}")) {
             String[] dateArray = date.split("/");
@@ -783,27 +783,27 @@ class Librarian {
                 if (year == todayYear) {
                     if (month == todayMonth) {
                         if (day <= todayDay) {
-                            return false;
+                            return true;
                         }
                     } else if (month < todayMonth) {
-                        return false;
+                        return true;
                     }
                 } else if (year < todayYear) {
-                    return false;
+                    return true;
                 }
             }
         }
-        return true;
+        return false;
     }
 
     //a check_rating_format_correct function that inputs a float rating
     // and check whether it is in the range of 0 to 10 (inclusive).
-    // if correct, return false, else return true.
+    // if correct, return true, else return false.
     private static boolean check_rating_format_correct(float rating) {
         if (rating >= 0 && rating <= 10) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     
@@ -820,9 +820,9 @@ class Librarian {
                     System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " User ID \""+userID+"\" does not exist.");
                 }
             }finally{
-                inputScanner.close();
+                //inputScanner.close();
             }
-        } while (userIDErrorFlag);
+        } while (!userIDErrorFlag);
         return userID;
     }
 
@@ -835,13 +835,13 @@ class Librarian {
                 System.out.print("Enter the call number: ");
                 callNumber = inputScanner.next();
                 callNumberErrorFlag = check_callNumber_available(callNumber, con);
-                if (callNumberErrorFlag) {
+                if (!callNumberErrorFlag) {
                     System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Call number \""+callNumber+"\" does not exist.");
                 }
             }finally{
-                inputScanner.close();
+                //inputScanner.close();
             }
-        } while (callNumberErrorFlag);
+        } while (!callNumberErrorFlag);
         return callNumber;
     }
 
@@ -854,13 +854,13 @@ class Librarian {
                 System.out.print("Enter the copy number: ");
                 copyNumber = inputScanner.nextInt();
                 copyNumberErrorFlag = check_copyNumber_available(callNumber, copyNumber, con);
-                if (copyNumberErrorFlag) {
+                if (!copyNumberErrorFlag) {
                     System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Copy number \""+copyNumber+"\" does not exist.");
                 }
             }finally{
-                inputScanner.close();
+                //inputScanner.close();
             }
-        } while (copyNumberErrorFlag);
+        } while (!copyNumberErrorFlag);
         return copyNumber;
     }
 
@@ -873,13 +873,13 @@ class Librarian {
                 System.out.print("Enter the rating (0-10): ");
                 rating = inputScanner.nextInt();
                 ratingErrorFlag = check_rating_format_correct(rating);
-                if (ratingErrorFlag) {
+                if (!ratingErrorFlag) {
                     System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Expected input a value between 0 and 10!");
                 }
             }finally{
-                inputScanner.close();
+                //inputScanner.close();
             }
-        } while (ratingErrorFlag);
+        } while (!ratingErrorFlag);
         return rating;
     }
 
@@ -897,9 +897,9 @@ class Librarian {
                 }
             }
             finally{
-                inputScanner.close();
+                //inputScanner.close();
             }
-        }while(startDateErrorFlag);
+        }while(!startDateErrorFlag);
         return Utility.parse_date_format(startDate);
     }
 
@@ -912,27 +912,26 @@ class Librarian {
                 System.out.print("Type in the ending date [dd/mm/yyyy]: ");
                 endDate = inputScanner.next();
                 endDateErrorFlag = check_date_format_correct(endDate);
-                if (endDateErrorFlag) {
+                if (!endDateErrorFlag) {
                     System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Please enter a date before or on today ("+ Utility.get_today_date() +")");
                 }
             } finally {
-                inputScanner.close();
+                //inputScanner.close();
             }
-        } while (endDateErrorFlag);
+        } while (!endDateErrorFlag);
         return Utility.parse_date_format(endDate);
     }
 
     // a borrow_book function that inputs string userID, string callNumber, int copyNumber, string todayDate through Connection con and insert 
     // into the table borrow with field libuid, callnum, copynum, checkout, and leave field return null
     private static void borrow_book(String userID, String callNumber, int copyNumber, String todayDate, Connection con) {
-        String sql = "INSERT INTO borrow (libuid, callnum, copynum, checkout, return) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO borrow (libuid, callnum, copynum, checkout) VALUES (?, ?, ?, ?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, userID);
             pstmt.setString(2, callNumber);
             pstmt.setInt(3, copyNumber);
-            pstmt.setString(4, todayDate);
-            pstmt.setString(5, null);
+            pstmt.setDate(4, java.sql.Date.valueOf(todayDate));
             pstmt.executeUpdate();
             System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
                 + "borrowing" + Utility.ANSI_BOLD_RESET
@@ -945,7 +944,7 @@ class Librarian {
     // an update_book_time_borrowed function that inputs string callNumber through Connection con and 
     // increases the value tborrowed by 1 in the table book where callnum is equal to callNumber
     private static void update_book_time_borrowed(String callNumber, Connection con) {
-        String sql = "UPDATE book SET tborrowed = tborrowed + 1 WHERE callnum = ?";
+        String sql = "UPDATE book SET tborrowed = tborrowed + 1 WHERE callnum = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, callNumber);
@@ -959,7 +958,7 @@ class Librarian {
     //  this unique combination of userID, callNumber, and copyNumber is available in the table borrow with fields libuid, callnum, copynum
     //  if the number of rows is greater than 0, return true, otherwise return false
     private static boolean _userID_callNumber_copyNumber_exists(String userID, String callNumber, int copyNumber, Connection con) {
-        String sql = "SELECT * FROM borrow WHERE libuid = ? AND callnum = ? AND copynum = ?";
+        String sql = "SELECT * FROM borrow WHERE libuid = (?) AND callnum = (?) AND copynum = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, userID);
@@ -981,10 +980,10 @@ class Librarian {
     private static void return_book(String userID, String callNumber, int copyNumber, String todayDate, Connection con) {
         boolean userIDCallNumberCopyNumberExists = _userID_callNumber_copyNumber_exists(userID, callNumber, copyNumber, con);
         if (userIDCallNumberCopyNumberExists) {
-            String sql = "UPDATE borrow SET return = ? WHERE libuid = ? AND callnum = ? AND copynum = ?";
+            String sql = "UPDATE borrow SET borrow.return = (?) WHERE libuid = (?) AND callnum = (?) AND copynum = (?)";
             try {
                 PreparedStatement pstmt = con.prepareStatement(sql);
-                pstmt.setString(1, todayDate);
+                pstmt.setDate(1, java.sql.Date.valueOf(todayDate));
                 pstmt.setString(2, userID);
                 pstmt.setString(3, callNumber);
                 pstmt.setInt(4, copyNumber);
@@ -1003,7 +1002,7 @@ class Librarian {
     //a float _get_book_rating function that inputs string callNumber through Connection con and get the rating of the book
     // from table book with field callnum and return the rating. If not found book, return -1.
     private static float _get_book_rating(String callNumber, Connection con) {
-        String sql = "SELECT rating FROM book WHERE callnum = ?";
+        String sql = "SELECT rating FROM book WHERE callnum = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, callNumber);
@@ -1020,7 +1019,7 @@ class Librarian {
     //an int _get_num_borrows function that inputs string callNumber through Connection con and get the number of borrows of the book
     // from table borrow with field callnum and return the number of borrows. If not found book, return -1.
     private static int _get_num_borrows(String callNumber, Connection con) {
-        String sql = "SELECT tborrowed FROM book WHERE callnum = ?";
+        String sql = "SELECT tborrowed FROM book WHERE callnum = (?)";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, callNumber);
@@ -1041,10 +1040,10 @@ class Librarian {
         float originalRating = _get_book_rating(callNumber, con);
         int numBorrows = _get_num_borrows(callNumber, con);
         if (originalRating != -1 && numBorrows != -1) {
-            String sql = "UPDATE book SET rating = ? WHERE callnum = ?";
+            String sql = "UPDATE book SET rating = (?) WHERE callnum = (?)";
             try {
                 PreparedStatement pstmt = con.prepareStatement(sql);
-                pstmt.setFloat(1, (originalRating * numBorrows + newRating) / (numBorrows + 1));
+                pstmt.setFloat(1, (originalRating * (numBorrows-1) + newRating) / (numBorrows));
                 pstmt.setString(2, callNumber);
                 pstmt.executeUpdate();
                 System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book rating "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
@@ -1063,7 +1062,7 @@ class Librarian {
     // print out all the rows with fields libuid, callnum, copynum, checkout with header
     // |LibUID|CallNum|CopyNum|Checkout|
     private static void get_all_unreturned_books(String startDate, String endDate, Connection con) {
-        String sql = "SELECT * FROM borrow WHERE return IS NULL AND checkout BETWEEN ? AND ?";
+        String sql = "SELECT * FROM borrow WHERE borrow.return IS NULL AND checkout BETWEEN (?) AND (?) ORDER BY borrow.checkout DESC";
         try {
             PreparedStatement pstmt = con.prepareStatement(sql);
             pstmt.setString(1, startDate);
@@ -1150,7 +1149,7 @@ class Librarian {
                     TimeUnit.MILLISECONDS.sleep(Utility.GLOBAL_SLEEP_TIME);
                 }
                 finally{
-                    inputScanner.close();
+                    //inputScanner.close();
                 }
             }while(continueFlag);
         } catch (Exception e) {
