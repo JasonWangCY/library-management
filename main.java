@@ -922,6 +922,25 @@ class Librarian {
         return Utility.parse_date_format(endDate);
     }
 
+    // check if a book copy is already borrowed
+    // if the copy is currently available (i.e. not borrowed), return true
+    // otherwise, return false
+    private static boolean book_status(String callNumber, int copyNumber, Connection con) {
+        String sql = "SELECT * FROM borrow WHERE callnum = (?) and copynum = (?) and borrow.return is not NULL";
+        try {
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, callNumber);
+            pstmt.setInt(2, copyNumber);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return true;
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return false;
+    }
+
     // a borrow_book function that inputs string userID, string callNumber, int copyNumber, string todayDate through Connection con and insert 
     // into the table borrow with field libuid, callnum, copynum, checkout, and leave field return null
     private static void borrow_book(String userID, String callNumber, int copyNumber, String todayDate, Connection con) {
@@ -977,7 +996,7 @@ class Librarian {
     // a return_book function that inputs string userID, string callNumber, int copyNumber, string todayDate through Connection con and update
     // the table borrow with field return = todayDate where libuid = userID and callnum = callNumber and copynum = copyNumber, and output error
     // if the userID, callNumber and copyNumber are not found in the table borrow
-    private static void return_book(String userID, String callNumber, int copyNumber, String todayDate, Connection con) {
+    private static void return_book(String userID, String callNumber, int copyNumber, String todayDate, Float bookRating, Connection con) {
         boolean userIDCallNumberCopyNumberExists = _userID_callNumber_copyNumber_exists(userID, callNumber, copyNumber, con);
         if (userIDCallNumberCopyNumberExists) {
             String sql = "UPDATE borrow SET borrow.return = (?) WHERE libuid = (?) AND callnum = (?) AND copynum = (?)";
@@ -991,6 +1010,7 @@ class Librarian {
                 System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
                 + "returning" + Utility.ANSI_BOLD_RESET
                 + Utility.ANSI_UNDERLINE_RESET+ " performed successfully.");
+                update_book_rating(callNumber, bookRating, con);
             } catch (SQLException e) {
                 System.out.println(e);
             }
@@ -1043,12 +1063,13 @@ class Librarian {
             String sql = "UPDATE book SET rating = (?) WHERE callnum = (?)";
             try {
                 PreparedStatement pstmt = con.prepareStatement(sql);
-                pstmt.setFloat(1, (originalRating * (numBorrows-1) + newRating) / (numBorrows));
+                pstmt.setFloat(1, (originalRating * numBorrows + newRating) / (numBorrows+1));
                 pstmt.setString(2, callNumber);
                 pstmt.executeUpdate();
                 System.out.println(Utility.ANSI_BOLD + Utility.ANSI_GREEN + "[Success]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET +" Book rating "+Utility.ANSI_WHITE_UNDERLINED + Utility.ANSI_BOLD
                 + "updated" + Utility.ANSI_BOLD_RESET
                 + Utility.ANSI_UNDERLINE_RESET+" successfully.");
+                update_book_time_borrowed(callNumber, con);
             } catch (SQLException e) {
                 System.out.println(e);
             }
@@ -1084,8 +1105,12 @@ class Librarian {
         int copyNumber = enter_copy_number(callNumber, con);
         String todayDate = Utility.get_today_date_format();
         try{
-            borrow_book(userID, callNumber, copyNumber, todayDate, con);
-            update_book_time_borrowed(callNumber, con);
+            if(book_status(callNumber, copyNumber, con)){
+                borrow_book(userID, callNumber, copyNumber, todayDate, con);
+            }
+            else {
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Book copy is not available.");
+            }
         } catch (Exception e) {
             transactionErrorFlag = true;
             System.out.println(e);
@@ -1103,8 +1128,11 @@ class Librarian {
         float bookRating = enter_rating();
         String todayDate = Utility.get_today_date_format();
         try{
-            return_book(userID, callNumber, copyNumber,todayDate, con);
-            update_book_rating(callNumber, bookRating, con);
+            if(!book_status(callNumber, copyNumber, con)) {
+                return_book(userID, callNumber, copyNumber,todayDate, bookRating, con);
+            } else {
+                System.out.println(Utility.ANSI_BOLD + Utility.ANSI_RED + "[Error]" + Utility.ANSI_RESET+ Utility.ANSI_BOLD_RESET + " Book copy is already returned!");
+            }
         }catch (Exception e){
             transactionErrorFlag = true;
             System.out.println(e);
