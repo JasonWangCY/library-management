@@ -591,11 +591,12 @@ class LibraryUser{
         System.out.print("Enter the User ID: ");
         Scanner inputScanner = new Scanner(System.in);
         String userID = inputScanner.next();
-        
-        String sqlQuery = "select book.callnum, copynum, title, aname, checkout, 'Yes' as returned "
+
+        String sqlQuery = "select book.callnum, copynum, title, aname, checkout, "
+            + "case when borrow.return is not null then 'Yes' else 'No' end as returned "
             + "from book, borrow, authorship, libuser "
             + "where libuser.libuid = '" + userID + "' and book.callnum=authorship.callnum "
-            + "and book.callnum=borrow.callnum and checkout is not null and borrow.libuid = libuser.libuid "
+            + "and book.callnum=borrow.callnum and borrow.libuid = libuser.libuid "
             + "order by checkout desc;";
         SQLQuery.search_user_record(con, sqlQuery);
     }
